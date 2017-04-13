@@ -1,7 +1,8 @@
 import json
 
 from django.conf.urls import url
-from django.contrib import messages
+from django.contrib import admin, messages
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldError, ValidationError
 from django.http import HttpResponse
 from django.views.generic import TemplateView
@@ -10,6 +11,7 @@ from .compat import text_type
 from .exceptions import DjangoQLError
 from .queryset import apply_search
 from .schema import DjangoQLSchema
+from .models import FavoriteSearchQuery
 
 
 class DjangoQLSearchMixin(object):
@@ -55,6 +57,14 @@ class DjangoQLSearchMixin(object):
         if self.djangoql_completion:
             custom_urls += [
                 url(
+                    r'^save_search_query/$',
+                    self.admin_site.admin_view(self.save_search_query),
+                    name='%s_%s_save_search_query' % (
+                        self.model._meta.app_label,
+                        self.model._meta.model_name,
+                    ),
+                ),
+                url(
                     r'^introspect/$',
                     self.admin_site.admin_view(self.introspect),
                     name='%s_%s_djangoql_introspect' % (
@@ -78,3 +88,31 @@ class DjangoQLSearchMixin(object):
             content=json.dumps(response, indent=2),
             content_type='application/json; charset=utf-8',
         )
+
+    def save_search_query(self, request):
+        #                     .POST...
+        search_query = request.GET.get('search_query')
+        response = {"success": False}
+
+        if search_query:
+            model_contenttype = ContentType.objects.get(
+                                    app_label=self.model._meta.app_label,
+                                    model=self.model._meta.model_name)
+
+            _, created = FavoriteSearchQuery.objects.get_or_create(
+                            model_contenttype=model_contenttype,
+                            user=request.user,
+                            search_query=search_query)
+
+            response = {"success": True}
+
+        return HttpResponse(
+            content=json.dumps(response, indent=2),
+            content_type='application/json; charset=utf-8',
+        )
+
+
+@admin.register(FavoriteSearchQuery)
+class FavoriteSearchQueryAdmin(admin.ModelAdmin):
+    list_display = ('model_contenttype', 'search_query',)
+
