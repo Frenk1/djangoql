@@ -3,18 +3,22 @@
 
   DjangoQL.DOMReady(function () {
     // Replace standard search input with textarea
-    var textarea;
+    var textarea,
+        textareaWrapper;
     var input = document.querySelector('input[name=q]');
     if (!input) {
       return;
     }
+    textareaWrapper = document.createElement('div');
+    textareaWrapper.className = input.id + '__wrap';
     textarea = document.createElement('textarea');
     textarea.value = input.value;
     textarea.id = input.id;
     textarea.name = input.name;
-    textarea.rows = 1;
+    textarea.rows = 10;
     textarea.setAttribute('maxlength', 2000);
-    input.parentNode.insertBefore(textarea, input);
+    textareaWrapper.appendChild(textarea);
+    input.parentNode.insertBefore(textareaWrapper, input);
     input.parentNode.removeChild(input);
     textarea.focus();
 

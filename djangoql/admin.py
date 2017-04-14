@@ -45,10 +45,12 @@ class DjangoQLSearchMixin(object):
                 'djangoql/js/lib/lexer.js',
                 'djangoql/js/completion.js',
                 'djangoql/js/completion_admin.js',
+                'djangoql/js/favorite_search_queries.js',
             ))
             media.add_css({'': (
                 'djangoql/css/completion.css',
                 'djangoql/css/completion_admin.css',
+                'djangoql/css/favorite_search_queries.css',
             )})
         return media
 
@@ -57,9 +59,33 @@ class DjangoQLSearchMixin(object):
         if self.djangoql_completion:
             custom_urls += [
                 url(
+                    r'^favorite_queries/$',
+                    self.admin_site.admin_view(self.favorite_queries),
+                    name='%s_%s_favorite_queries' % (
+                        self.model._meta.app_label,
+                        self.model._meta.model_name,
+                    ),
+                ),
+                url(
                     r'^save_search_query/$',
                     self.admin_site.admin_view(self.save_search_query),
                     name='%s_%s_save_search_query' % (
+                        self.model._meta.app_label,
+                        self.model._meta.model_name,
+                    ),
+                ),
+                url(
+                    r'^toggle_public_search_query/$',
+                    self.admin_site.admin_view(self.toggle_public_search_query),
+                    name='%s_%s_toggle_public_search_query' % (
+                        self.model._meta.app_label,
+                        self.model._meta.model_name,
+                    ),
+                ),
+                url(
+                    r'^delete_search_query/(?P<item_id>\d+)/$',
+                    self.admin_site.admin_view(self.delete_search_query),
+                    name='%s_%s_delete_search_query' % (
                         self.model._meta.app_label,
                         self.model._meta.model_name,
                     ),
@@ -82,16 +108,18 @@ class DjangoQLSearchMixin(object):
             ]
         return custom_urls + super(DjangoQLSearchMixin, self).get_urls()
 
-    def introspect(self, request):
-        response = self.djangoql_schema(self.model).as_dict()
+    def http_response(self, context):
         return HttpResponse(
-            content=json.dumps(response, indent=2),
+            content=json.dumps(context, indent=2),
             content_type='application/json; charset=utf-8',
         )
 
+    def introspect(self, request):
+        response = self.djangoql_schema(self.model).as_dict()
+        return self.http_response(response)
+
     def save_search_query(self, request):
-        #                     .POST...
-        search_query = request.GET.get('search_query')
+        search_query = request.POST.get('search_query')
         response = {"success": False}
 
         if search_query:
@@ -105,14 +133,35 @@ class DjangoQLSearchMixin(object):
                             search_query=search_query)
 
             response = {"success": True}
+        return self.http_response(response)
 
-        return HttpResponse(
-            content=json.dumps(response, indent=2),
-            content_type='application/json; charset=utf-8',
-        )
+    def favorite_queries(self, request):
+        items = FavoriteSearchQuery.objects.filter(user=request.user) \
+                    .values_list('id', 'search_query')
+        return self.http_response({"items": dict(items)})
+
+    def toggle_public_search_query(self, request):
+        pass
+        # items = FavoriteSearchQuery.objects.filter(user=request.user).values_list('search_query', flat=True)
+        # return self.http_response({"items": list(items)})
+
+    def delete_search_query(self, request, item_id):
+        response = {"success": False}
+        if request.user.is_superuser:
+            filter_options = dict(id=item_id)
+        else:
+            filter_options = dict(id=item_id, user=request.user)
+        item = FavoriteSearchQuery.objects.get(**filter_options)
+        if item.delete():
+            response = {"success": True}
+        return self.http_response(response)
 
 
 @admin.register(FavoriteSearchQuery)
 class FavoriteSearchQueryAdmin(admin.ModelAdmin):
     list_display = ('model_contenttype', 'search_query',)
+
+    def get_queryset(self, request):
+        qs = super(FavoriteSearchQueryAdmin, self).get_queryset(request)
+        return qs.filter(user=request.user)
 
