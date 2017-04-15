@@ -142,8 +142,6 @@ class DjangoQLSearchMixin(object):
 
     def toggle_public_search_query(self, request):
         pass
-        # items = FavoriteSearchQuery.objects.filter(user=request.user).values_list('search_query', flat=True)
-        # return self.http_response({"items": list(items)})
 
     def delete_search_query(self, request, item_id):
         response = {"success": False}
