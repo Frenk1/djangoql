@@ -17,7 +17,8 @@
     var favoriteIconTemplate = '<a href="#" class="js-add-search-query icon icon_favorite-inactive"></a></div>';
     searchToolbox.append(searchQueriesBoxTemplate);
 
-    // NOTE: something shit, maybe related with completion_admin.js
+    // FIXME?: something shit, maybe related with completion_admin.js
+    // setTimeout(..., 0) fixes troubles with EventLoop queue
     setTimeout(function () {
       searchToolbox.find('.searchbar__wrap').append(favoriteIconTemplate);
       FavoriteQuery.addSearchQuery();
