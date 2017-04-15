@@ -11,7 +11,7 @@ from .compat import text_type
 from .exceptions import DjangoQLError
 from .queryset import apply_search
 from .schema import DjangoQLSchema
-from .models import FavoriteSearchQuery
+from .models import FavoriteSearch
 
 
 class DjangoQLSearchMixin(object):
@@ -127,7 +127,7 @@ class DjangoQLSearchMixin(object):
                                     app_label=self.model._meta.app_label,
                                     model=self.model._meta.model_name)
 
-            _, created = FavoriteSearchQuery.objects.get_or_create(
+            _, created = FavoriteSearch.objects.get_or_create(
                             model_contenttype=model_contenttype,
                             user=request.user,
                             search_query=search_query)
@@ -136,7 +136,7 @@ class DjangoQLSearchMixin(object):
         return self.http_response(response)
 
     def favorite_queries(self, request):
-        items = FavoriteSearchQuery.objects.filter(user=request.user) \
+        items = FavoriteSearch.objects.filter(user=request.user) \
                     .values_list('id', 'search_query')
         return self.http_response({"items": dict(items)})
 
@@ -151,17 +151,17 @@ class DjangoQLSearchMixin(object):
             filter_options = dict(id=item_id)
         else:
             filter_options = dict(id=item_id, user=request.user)
-        item = FavoriteSearchQuery.objects.get(**filter_options)
+        item = FavoriteSearch.objects.get(**filter_options)
         if item.delete():
             response = {"success": True}
         return self.http_response(response)
 
 
-@admin.register(FavoriteSearchQuery)
-class FavoriteSearchQueryAdmin(admin.ModelAdmin):
+@admin.register(FavoriteSearch)
+class FavoriteSearchAdmin(admin.ModelAdmin):
     list_display = ('model_contenttype', 'search_query',)
 
     def get_queryset(self, request):
-        qs = super(FavoriteSearchQueryAdmin, self).get_queryset(request)
+        qs = super(FavoriteSearchAdmin, self).get_queryset(request)
         return qs.filter(user=request.user)
 

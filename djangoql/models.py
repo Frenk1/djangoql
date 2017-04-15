@@ -7,7 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.text import Truncator
 
 
-class FavoriteSearchQuery(models.Model):
+class FavoriteSearch(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     search_query = models.TextField()
     model_contenttype = models.ForeignKey(ContentType, on_delete=models.CASCADE)
