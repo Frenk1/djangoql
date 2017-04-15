@@ -24,14 +24,13 @@
       FavoriteQuery.listSearchQueries();
     }, 0);
 
-
     $('.js-toggle-saved-searches').click(function (e) {
       e.preventDefault();
       $('#search-queries').toggle();
     });
     searchToolbox.on('keyup', '#searchbar',function() {
       FavoriteQuery.updateStateAddingButton();
-    }).keyup();
+    });
   });
 
 
@@ -60,7 +59,7 @@
             $('#searchbar').val($(this).text());
             FavoriteQuery.updateStateAddingButton();
           });
-
+          FavoriteQuery.updateStateAddingButton();
           FavoriteQuery.deleteSearchQuery();
           FavoriteQuery.filterSearchQueries();
         });
